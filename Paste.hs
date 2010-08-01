@@ -1,3 +1,4 @@
+module Paste (newGist) where
 import Network.Browser
 import Network.URI
 import Network.HTTP
@@ -17,7 +18,8 @@ gistUrl = fromJust $ parseURI "http://gist.github.com/gists"
 testGist :: IO URI
 testGist = do
     (uri, rsp) <- browse $ do
-                  setAllowRedirects True
+                  setOutHandler (\a -> return ())
+                  setErrHandler (\a -> return ())
                   request $ formToRequest $
                           Form POST gistUrl
                                     [("file_ext[gistfile1]",".txt"),
@@ -29,7 +31,8 @@ newGist :: String -> String -> String -> IO URI
 newGist contents filename ext = do
     (usr, token) <- getGithubConfig
     (uri, rsp) <- browse $ do
-                  setAllowRedirects True
+                  setOutHandler (\a -> return ())
+                  setErrHandler (\a -> return ())
                   request $ formToRequest $
                           Form POST gistUrl
                                     [("file_ext[gistfile1]", ext),
