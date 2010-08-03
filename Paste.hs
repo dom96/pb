@@ -15,17 +15,14 @@ getGithubConfig = do
     return (usr, token)
 
 gistUrl = fromJust $ parseURI "http://gist.github.com/gists"
-testGist :: IO URI
-testGist = do
-    (uri, rsp) <- browse $ do
-                  setOutHandler (\a -> return ())
-                  setErrHandler (\a -> return ())
-                  request $ formToRequest $
-                          Form POST gistUrl
-                                    [("file_ext[gistfile1]",".txt"),
-                                     ("file_name[gistfile1]", "test"),
-                                     ("file_contents[gistfile1]","hello world")]
-    return uri
+
+genPostData contents filename ext usr token = 
+    let dat = [("file_ext[gistfile1]", ext),
+               ("file_name[gistfile1]", filename),
+               ("file_contents[gistfile1]", contents)] in
+    if (not $ null usr) && (not $ null token)
+        then dat ++ [("login", usr), ("token", token)]
+        else dat
 
 newGist :: String -> String -> String -> IO URI
 newGist contents filename ext = do
@@ -33,11 +30,7 @@ newGist contents filename ext = do
     (uri, rsp) <- browse $ do
                   setOutHandler (\a -> return ())
                   setErrHandler (\a -> return ())
-                  request $ formToRequest $
-                          Form POST gistUrl
-                                    [("file_ext[gistfile1]", ext),
-                                     ("file_name[gistfile1]", filename),
-                                     ("file_contents[gistfile1]", contents),
-                                     ("login", usr),
-                                     ("token", token)]
+                  request $ formToRequest $ Form POST gistUrl $
+                      genPostData contents filename ext usr token
+                                    
     return uri
