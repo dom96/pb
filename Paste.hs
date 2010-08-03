@@ -16,6 +16,7 @@ getGithubConfig = do
 
 gistUrl = fromJust $ parseURI "http://gist.github.com/gists"
 
+genPostData :: String -> String -> String -> String -> String -> [(String, String)]
 genPostData contents filename ext usr token = 
     let dat = [("file_ext[gistfile1]", ext),
                ("file_name[gistfile1]", filename),
