@@ -6,12 +6,26 @@ import Data.Maybe
 import System.IO
 import System.Process
 
+getUserGithub :: IO String
+getUserGithub = do
+    (pstdin, pstdout, pstderr, ph) <- runInteractiveCommand $ "git config --global github.user"
+    eof <- hIsEOF pstdout
+    if not $ eof
+        then hGetLine pstdout
+        else return ""
+
+getTokenGithub :: IO String
+getTokenGithub = do
+    (pstdin, pstdout, pstderr, ph) <- runInteractiveCommand $ "git config --global github.token"
+    eof <- hIsEOF pstdout
+    if not $ eof
+        then hGetLine pstdout
+        else return ""
+
 getGithubConfig :: IO (String, String)
 getGithubConfig = do
-    (pstdin, pstdout, pstderr, ph) <- runInteractiveCommand $ "git config --global github.user"
-    usr <- hGetLine pstdout
-    (pstdin, pstdout, pstderr, ph) <- runInteractiveCommand $ "git config --global github.token"
-    token <- hGetLine pstdout
+    usr <- getUserGithub
+    token <- getTokenGithub
     return (usr, token)
 
 gistUrl = fromJust $ parseURI "http://gist.github.com/gists"
