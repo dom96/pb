@@ -31,7 +31,10 @@ pastebin name ext = do
 
 
 data Options = Options
- { optClipboard   :: Bool
+ {
+   optPasteSyntax :: String
+ , optPasteBin    :: Bool
+ , optClipboard   :: Bool
  , optShowVersion :: Bool
  , optPasteName   :: String
  , optPasteExt    :: String
@@ -44,6 +47,8 @@ defaultOptions    = Options
  , optShowHelp    = False
  , optPasteName   = "file"
  , optPasteExt    = ".txt"
+ , optPasteBin    = False
+ , optPasteSyntax = "text"
  }
 
 
@@ -63,6 +68,10 @@ options =
         "pastebin with the extension name"
     , Option ['h'] ["help"]
         (NoArg (\opts -> opts { optShowHelp = True })) "help"
+    , Option ["pb"] ["pastebin"]
+        (ReqArg (\opts -> opts { optPasteBin = True})) "Paste to pastebin.com"
+    , Option ["syn"] ["syntax"]
+        (ReqArg (\f opts -> opts { optPasteSyntax = f })) "Set syntax when pasting to pastebin.com"
     ]
 header = "Usage: pb [options]"
 
@@ -75,8 +84,8 @@ parseOpts xs
     | optShowVersion xs = do putStrLn "pb 0.1"
     | optShowHelp xs    = do putStrLn $ usageInfo header options
     | optClipboard xs   = do pastebinCB (optPasteName xs) (optPasteExt xs)
+    | optPasteBin xs    = do newPasteBin optPasteSyntax
     | otherwise         = do pastebin   (optPasteName xs) (optPasteExt xs)
-
 main = do
     args <- getArgs
     opts <- pbOpts args
@@ -85,8 +94,3 @@ main = do
         (xs, _)  -> parseOpts xs
     --putStrLn $ "Got args " ++ (show args)
     --parseArgs args
-
-
-    
-    
-

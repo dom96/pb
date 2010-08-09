@@ -49,3 +49,21 @@ newGist contents filename ext = do
                       genPostData contents filename ext usr token
 
     return uri
+
+
+pastebinUrl = fromJust $ parseURI "http://pastebin.com/api_public.php"
+
+genPasteBinData :: String -> String -> [(String, String)]
+genPasteBinData content syntax = 
+	 [("paste_code", content),
+	 ("paste_format", syntax)]
+
+newPasteBin :: String -> IO URI
+newPasteBin syntax = do
+    putStrLn $ "About to pastebin "
+    putStrLn "Paste the code you want to pastebin and press CTRL + D to pastebin."
+    contents <- getContents
+    (uri, rsp) <- browse $ do 
+        request $ formToRequest $ Form POST pastebinUrl $
+            genPasteBinData contents syntax
+    return uri
