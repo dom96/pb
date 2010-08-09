@@ -13,32 +13,36 @@ getClipboard = do
         then hGetContents pstdout
         else return ""
 
-pastebinCB name ext = do
-        -- Get the contents of the clipboard
-	contents <- getClipboard
-        if not $ null contents
-            then do url <- newGist contents name ext
-                    putStrLn $ show url
-            else putStrLn "Error: Nothing in the clipboard"
+pastebinCB :: String -> String -> String -> IO ()
+pastebinCB name ext pb = do
+    -- Get the contents of the clipboard
+    contents <- getClipboard
+    if not $ null contents
+        then case pb of "gist" -> do url <- newGist contents name ext
+                                     putStrLn url
+                        "pb"   -> do url <- newPastebin contents "text"
+                                     putStrLn url   
+        else putStrLn "Error: Nothing in the clipboard"
 
-pastebin name ext = do
+pastebin :: String -> String -> String -> IO ()
+pastebin name ext pb = do
     putStrLn $ "About to pastebin " ++ name ++ ext
     putStrLn "Paste the code you want to pastebin and press CTRL + D to pastebin."
     contents <- getContents
 
-    url <- newGist contents name ext
-    putStrLn $ show url
-
+    case pb of "gist" -> do url <- newGist contents name ext
+                            putStrLn url
+               "pb"   -> do url <- newPastebin contents "text"
+                            putStrLn url
 
 data Options = Options
- {
-   optPasteSyntax :: String
- , optPasteBin    :: Bool
- , optClipboard   :: Bool
+ {  
+   optClipboard   :: Bool
  , optShowVersion :: Bool
+ , optShowHelp    :: Bool
  , optPasteName   :: String
  , optPasteExt    :: String
- , optShowHelp    :: Bool
+ , optPastebin    :: String -- Pastebin provider('gist' or 'pb')
  } deriving Show
 
 defaultOptions    = Options
@@ -47,8 +51,7 @@ defaultOptions    = Options
  , optShowHelp    = False
  , optPasteName   = "file"
  , optPasteExt    = ".txt"
- , optPasteBin    = False
- , optPasteSyntax = "text"
+ , optPastebin    = "gist" 
  }
 
 
@@ -69,29 +72,28 @@ options =
     , Option ['h'] ["help"]
         (NoArg (\opts -> opts { optShowHelp = True })) "help"
     , Option ['p'] ["pastebin"]
-        (NoArg (\opts -> opts { optPasteBin = True })) "Paste to pastebin.com"
-    , Option ['s'] ["syntax"]
-        (ReqArg (\f opts -> opts { optPasteSyntax = f }) 
-            "Set syntax when pasting to pastebin.com")
+        (ReqArg (\f opts -> opts { optPastebin = f }) "gist | pb" ) "Select a Pastebin provider"
     ]
 header = "Usage: pb [options]"
 
+pbOpts :: [String] -> IO (Options, [String])
 pbOpts args =
     case getOpt RequireOrder options args of 
         (xs, n, []) -> return (foldl (flip id) defaultOptions xs, n)
         (_, _, errs) -> ioError (userError (concat errs ++ usageInfo header options))
 
+parseOpts :: Options -> IO ()
 parseOpts xs
-    | optShowVersion xs = do putStrLn "pb 0.1"
-    | optShowHelp xs    = do putStrLn $ usageInfo header options
-    | optClipboard xs   = do pastebinCB (optPasteName xs) (optPasteExt xs)
-    | optPasteBin xs    = newPasteBin (optPasteSyntax xs)
-    | otherwise         = do pastebin   (optPasteName xs) (optPasteExt xs)
+    | optShowVersion xs = putStrLn "pb 0.1"
+    | optShowHelp xs    = putStrLn $ usageInfo header options
+    | optClipboard xs   = pastebinCB (optPasteName xs) (optPasteExt xs) (optPastebin xs)
+    | otherwise         = pastebin   (optPasteName xs) (optPasteExt xs) (optPastebin xs)
+    
+    
 main = do
     args <- getArgs
     opts <- pbOpts args
 
     case opts of
         (xs, _)  -> parseOpts xs
-    --putStrLn $ "Got args " ++ (show args)
-    --parseArgs args
+

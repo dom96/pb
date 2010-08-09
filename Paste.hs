@@ -1,4 +1,4 @@
-module Paste (newGist, newPasteBin) where
+module Paste (newGist, newPastebin) where
 import Network.Browser
 import Network.URI
 import Network.HTTP
@@ -39,7 +39,7 @@ genPostData contents filename ext usr token =
         then dat ++ [("login", usr), ("token", token)]
         else dat
 
-newGist :: String -> String -> String -> IO URI
+newGist :: String -> String -> String -> IO String
 newGist contents filename ext = do
     (usr, token) <- getGithubConfig
     (uri, rsp) <- browse $ do
@@ -48,19 +48,19 @@ newGist contents filename ext = do
                   request $ formToRequest $ Form POST gistUrl $
                       genPostData contents filename ext usr token
 
-    return uri
-
+    return $ show uri
 
 pastebinUrl = fromJust $ parseURI "http://pastebin.com/api_public.php"
 
-genPasteBinData :: String -> String -> [(String, String)]
-genPasteBinData content syntax = 
-	 [("paste_code", content),
-	 ("paste_format", syntax)]
+genPastebinData :: String -> String -> [(String, String)]
+genPastebinData content syntax = 
+	 [("paste_code", content), ("paste_format", syntax)]
 
-newPasteBin :: String -> String -> IO URI
-newPasteBin syntax contents = do
-    (uri, rsp) <- browse $ do 
-        request $ formToRequest $ Form POST pastebinUrl $
-            genPasteBinData contents syntax
-    return uri
+newPastebin :: String -> String -> IO String
+newPastebin contents syntax = do
+    (uri, rsp) <- browse $ do
+                  setOutHandler (\a -> return ())
+                  setErrHandler (\a -> return ())
+                  request $ formToRequest $ Form POST pastebinUrl $
+                      genPastebinData contents syntax
+    return $ rspBody rsp
