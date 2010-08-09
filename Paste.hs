@@ -1,4 +1,4 @@
-module Paste (newGist) where
+module Paste (newGist, newPasteBin) where
 import Network.Browser
 import Network.URI
 import Network.HTTP
@@ -58,11 +58,8 @@ genPasteBinData content syntax =
 	 [("paste_code", content),
 	 ("paste_format", syntax)]
 
-newPasteBin :: String -> IO URI
-newPasteBin syntax = do
-    putStrLn $ "About to pastebin "
-    putStrLn "Paste the code you want to pastebin and press CTRL + D to pastebin."
-    contents <- getContents
+newPasteBin :: String -> String -> IO URI
+newPasteBin syntax contents = do
     (uri, rsp) <- browse $ do 
         request $ formToRequest $ Form POST pastebinUrl $
             genPasteBinData contents syntax

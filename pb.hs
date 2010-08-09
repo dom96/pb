@@ -15,7 +15,7 @@ getClipboard = do
 
 pastebinCB name ext = do
         -- Get the contents of the clipboard
-        contents <- getClipboard
+	contents <- getClipboard
         if not $ null contents
             then do url <- newGist contents name ext
                     putStrLn $ show url
@@ -68,10 +68,11 @@ options =
         "pastebin with the extension name"
     , Option ['h'] ["help"]
         (NoArg (\opts -> opts { optShowHelp = True })) "help"
-    , Option ["pb"] ["pastebin"]
-        (ReqArg (\opts -> opts { optPasteBin = True})) "Paste to pastebin.com"
-    , Option ["syn"] ["syntax"]
-        (ReqArg (\f opts -> opts { optPasteSyntax = f })) "Set syntax when pasting to pastebin.com"
+    , Option ['p'] ["pastebin"]
+        (NoArg (\opts -> opts { optPasteBin = True })) "Paste to pastebin.com"
+    , Option ['s'] ["syntax"]
+        (ReqArg (\f opts -> opts { optPasteSyntax = f }) 
+            "Set syntax when pasting to pastebin.com")
     ]
 header = "Usage: pb [options]"
 
@@ -84,7 +85,7 @@ parseOpts xs
     | optShowVersion xs = do putStrLn "pb 0.1"
     | optShowHelp xs    = do putStrLn $ usageInfo header options
     | optClipboard xs   = do pastebinCB (optPasteName xs) (optPasteExt xs)
-    | optPasteBin xs    = do newPasteBin optPasteSyntax
+    | optPasteBin xs    = newPasteBin (optPasteSyntax xs)
     | otherwise         = do pastebin   (optPasteName xs) (optPasteExt xs)
 main = do
     args <- getArgs
