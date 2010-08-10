@@ -3,25 +3,9 @@ import System.Environment
 import System.Process
 import System.Console.GetOpt
 import Data.Maybe
-import Data.Map as M
+import qualified Data.Map as M
 import Paste
-
-extensions = fromList
-    [("php", "php")
-    ,("cpp", "cpp")
-    ,("hs", "haskell")
-    ,("c", "c")
-    ,("h", "c")
-    ,("hpp", "cpp")
-    ,("s", "asm")
-    ,("b", "bf")
-    ,("sh", "bash")
-    ,("asp", "asp")
-    ,("html", "html4strict")
-    ,("tpl", "php")
-    ,("ini", "ini")
-    ,("lisp", "lisp")
-    ,("cs", "csharp")]
+    
 getClipboard :: IO String
 getClipboard = do
     (pstdin, pstdout, pstderr, ph) <- runInteractiveCommand $ "xclip -o"
@@ -34,23 +18,29 @@ pastebinCB :: String -> String -> String -> IO ()
 pastebinCB name ext pb = do
     -- Get the contents of the clipboard
     contents <- getClipboard
-    if not $ Prelude.null contents
-        then case pb of "gist" -> do url <- newGist contents name ext
-                                     putStrLn url
-                        "pb"   -> do url <- newPastebin contents (fromJust (M.lookup ext extensions)) 
-                                     putStrLn url
+    if not $ null contents
+        then case pb of "gist"    -> do url <- newGist contents name ('.':ext)
+                                        putStrLn url
+                        "pb"      -> do url <- newPastebin contents 
+                                            (fromJust (M.lookup ext pbExts)) 
+                                        putStrLn url
+                        -- Leaving this here, just incase.
+                        otherwise -> putStrLn "Invalid pastebin provider" 
+                        
         else putStrLn "Error: Nothing in the clipboard"
 
 pastebin :: String -> String -> String -> IO ()
 pastebin name ext pb = do
-    putStrLn $ "About to pastebin " ++ name ++ ext
+    putStrLn $ "About to pastebin " ++ name ++ ('.':ext)
     putStrLn "Paste the code you want to pastebin and press CTRL + D to pastebin."
     contents <- getContents
 
-    case pb of "gist" -> do url <- newGist contents name ext
-                            putStrLn url
-               "pb"   -> do url <- newPastebin contents (fromJust (M.lookup ext extensions))
-                            putStrLn url
+    case pb of "gist"    -> do url <- newGist contents name ('.':ext)
+                               putStrLn url
+               "pb"      -> do url <- newPastebin contents 
+                                    (fromJust (M.lookup ext pbExts))
+                               putStrLn url
+               otherwise -> putStrLn "Invalid pastebin provider"
 
 data Options = Options
  {  
@@ -67,7 +57,7 @@ defaultOptions    = Options
  , optShowVersion = False
  , optShowHelp    = False
  , optPasteName   = "file"
- , optPasteExt    = ".txt"
+ , optPasteExt    = "txt"
  , optPastebin    = "gist" 
  }
 
@@ -104,9 +94,14 @@ parseOpts xs
     | optShowVersion xs = putStrLn "pb 0.1"
     | optShowHelp xs    = putStrLn $ usageInfo header options
     | optClipboard xs   = pastebinCB (optPasteName xs) (optPasteExt xs) (optPastebin xs)
-    | otherwise         = pastebin   (optPasteName xs) (optPasteExt xs) (optPastebin xs)
-    
-    
+    | isInvalidExt xs   = putStrLn "Invalid file extension"
+    | isInvalidPb xs    = putStrLn "Invalid pastebin provider"
+    | otherwise         = pastebin (optPasteName xs) (optPasteExt xs) (optPastebin xs)
+    -- TODO: Rewrite this in free point style. Should look nicer then.
+    where isInvalidExt xs = (not $ isJust $ M.lookup (optPasteExt xs) pbExts) &&
+                             optPastebin xs /= "gist"
+          isInvalidPb xs  = not (optPastebin xs == "gist" || optPastebin xs == "pb")
+
 main = do
     args <- getArgs
     opts <- pbOpts args
