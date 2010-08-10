@@ -9,7 +9,19 @@ import Paste
 extensions = fromList
     [("php", "php")
     ,("cpp", "cpp")
-    ,("hs", "haskell")]
+    ,("hs", "haskell")
+    ,("c", "c")
+    ,("h", "c")
+    ,("hpp", "cpp")
+    ,("s", "asm")
+    ,("b", "bf")
+    ,("sh", "bash")
+    ,("asp", "asp")
+    ,("html", "html4strict")
+    ,("tpl", "php")
+    ,("ini", "ini")
+    ,("lisp", "lisp")
+    ,("cs", "csharp")]
 getClipboard :: IO String
 getClipboard = do
     (pstdin, pstdout, pstderr, ph) <- runInteractiveCommand $ "xclip -o"
