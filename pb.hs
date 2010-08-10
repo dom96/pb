@@ -3,8 +3,13 @@ import System.Environment
 import System.Process
 import System.Console.GetOpt
 import Data.Maybe
+import Data.Map as M
 import Paste
 
+extensions = fromList
+    [("php", "php")
+    ,("cpp", "cpp")
+    ,("hs", "haskell")]
 getClipboard :: IO String
 getClipboard = do
     (pstdin, pstdout, pstderr, ph) <- runInteractiveCommand $ "xclip -o"
@@ -17,11 +22,11 @@ pastebinCB :: String -> String -> String -> IO ()
 pastebinCB name ext pb = do
     -- Get the contents of the clipboard
     contents <- getClipboard
-    if not $ null contents
+    if not $ Prelude.null contents
         then case pb of "gist" -> do url <- newGist contents name ext
                                      putStrLn url
-                        "pb"   -> do url <- newPastebin contents "text"
-                                     putStrLn url   
+                        "pb"   -> do url <- newPastebin contents (fromJust (M.lookup ext extensions)) 
+                                     putStrLn url
         else putStrLn "Error: Nothing in the clipboard"
 
 pastebin :: String -> String -> String -> IO ()
@@ -32,7 +37,7 @@ pastebin name ext pb = do
 
     case pb of "gist" -> do url <- newGist contents name ext
                             putStrLn url
-               "pb"   -> do url <- newPastebin contents "text"
+               "pb"   -> do url <- newPastebin contents (fromJust (M.lookup ext extensions))
                             putStrLn url
 
 data Options = Options

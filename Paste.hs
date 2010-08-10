@@ -52,7 +52,6 @@ newGist contents filename ext = do
 
 pastebinUrl = fromJust $ parseURI "http://pastebin.com/api_public.php"
 
-genPastebinData :: String -> String -> [(String, String)]
 genPastebinData content syntax = 
 	 [("paste_code", content), ("paste_format", syntax)]
 
