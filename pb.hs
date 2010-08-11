@@ -22,7 +22,7 @@ pastebinCB name ext pb = do
         then case pb of "gist"    -> do url <- newGist contents name ('.':ext)
                                         putStrLn url
                         "pb"      -> do url <- newPastebin contents 
-                                            (fromJust (M.lookup ext pbExts)) 
+                                          (fromJust (M.lookup ext pbExts)) 
                                         putStrLn url
                         -- Leaving this here, just incase.
                         otherwise -> putStrLn "Invalid pastebin provider" 
@@ -38,7 +38,7 @@ pastebin name ext pb = do
     case pb of "gist"    -> do url <- newGist contents name ('.':ext)
                                putStrLn url
                "pb"      -> do url <- newPastebin contents 
-                                    (fromJust (M.lookup ext pbExts))
+                                  (fromJust (M.lookup ext pbExts))
                                putStrLn url
                otherwise -> putStrLn "Invalid pastebin provider"
 

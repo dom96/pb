@@ -77,7 +77,7 @@ pbExts = M.fromList
 
 genPastebinData :: String -> String -> [(String, String)]
 genPastebinData content syntax = 
-	 [("paste_code", content), ("paste_format", syntax)]
+    [("paste_code", content), ("paste_format", syntax)]
 
 newPastebin :: String -> String -> IO String
 newPastebin contents syntax = do
