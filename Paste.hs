@@ -1,4 +1,4 @@
-module Paste (newGist, newPastebin, pbExts) where
+module Paste (newGist, newPastebin, pbExts, genGistData) where
 import Network.Browser
 import Network.URI
 import Network.HTTP
@@ -32,23 +32,27 @@ getGithubConfig = do
 
 gistUrl = fromJust $ parseURI "http://gist.github.com/gists"
 
-genGistData :: String -> String -> String -> String -> String -> [(String, String)]
-genGistData contents filename ext usr token = 
-    let dat = [("file_ext[gistfile1]", ext),
-               ("file_name[gistfile1]", filename ++ ext),
-               ("file_contents[gistfile1]", contents)] in
-    if (not $ null usr) && (not $ null token)
-        then dat ++ [("login", usr), ("token", token)]
-        else dat
+genGistData :: String -> String -> String -> Bool -> String -> String -> [(String, String)]
+genGistData contents filename ext priv usr token
+  | (not $ null usr) && (not $ null token) =
+    dat ++ [("login", usr), ("token", token)]
+  | (not $ null usr) && (not $ null token) && priv =
+    dat ++ [("login", usr), ("token", token)] ++ [("action_button", "private")] -- Gist currently doesn't support private gists through the API.
+  | priv =
+    dat ++ [("action_button", "private")]
+  | otherwise = dat
+  where dat = [("file_ext[gistfile1]", ext),
+             ("file_name[gistfile1]", filename ++ ext),
+             ("file_contents[gistfile1]", contents)]
 
-newGist :: String -> String -> String -> IO String
-newGist contents filename ext = do
+newGist :: String -> String -> String -> Bool -> IO String
+newGist contents filename ext private = do
     (usr, token) <- getGithubConfig
     (uri, rsp) <- browse $ do
                   setOutHandler (\a -> return ())
                   setErrHandler (\a -> return ())
                   request $ formToRequest $ Form POST gistUrl $
-                      genGistData contents filename ext usr token
+                      genGistData contents filename ext private usr token
 
     return $ show uri
 
@@ -75,15 +79,17 @@ pbExts = M.fromList
     ,("cs", "csharp")
     ,("py", "python")]
 
-genPastebinData :: String -> String -> [(String, String)]
-genPastebinData content syntax = 
-    [("paste_code", content), ("paste_format", syntax)]
+genPastebinData :: String -> String -> Bool -> [(String, String)]
+genPastebinData content syntax priv
+  | priv = dat ++ [("paste_private", "1")]
+  | otherwise = dat
+  where dat = [("paste_code", content), ("paste_format", syntax)]
 
-newPastebin :: String -> String -> IO String
-newPastebin contents syntax = do
+newPastebin :: String -> String -> Bool -> IO String
+newPastebin contents syntax priv = do
     (uri, rsp) <- browse $ do
                   setOutHandler (\a -> return ())
                   setErrHandler (\a -> return ())
                   request $ formToRequest $ Form POST pastebinUrl $
-                      genPastebinData contents syntax
+                      genPastebinData contents syntax priv
     return $ rspBody rsp

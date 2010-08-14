@@ -14,31 +14,32 @@ getClipboard = do
         then hGetContents pstdout
         else return ""
 
-pastebinCB :: String -> String -> String -> IO ()
-pastebinCB name ext pb = do
+pastebinCB :: String -> String -> String -> Bool -> IO ()
+pastebinCB name ext pb priv = do
     -- Get the contents of the clipboard
     contents <- getClipboard
     if not $ null contents
-        then case pb of "gist"    -> do url <- newGist contents name ('.':ext)
+        then case pb of "gist"    -> do url <- newGist contents name
+                                            ('.':ext) priv
                                         putStrLn url
                         "pb"      -> do url <- newPastebin contents 
-                                          (fromJust (M.lookup ext pbExts)) 
+                                          (fromJust (M.lookup ext pbExts)) priv
                                         putStrLn url
                         -- Leaving this here, just incase.
                         otherwise -> putStrLn "Invalid pastebin provider" 
                         
         else putStrLn "Error: Nothing in the clipboard"
 
-pastebin :: String -> String -> String -> IO ()
-pastebin name ext pb = do
+pastebin :: String -> String -> String -> Bool -> IO ()
+pastebin name ext pb priv = do
     putStrLn $ "About to pastebin " ++ name ++ ('.':ext)
     putStrLn "Paste the code you want to pastebin and press CTRL + D to pastebin."
     contents <- getContents
 
-    case pb of "gist"    -> do url <- newGist contents name ('.':ext)
+    case pb of "gist"    -> do url <- newGist contents name ('.':ext) priv
                                putStrLn url
                "pb"      -> do url <- newPastebin contents 
-                                  (fromJust (M.lookup ext pbExts))
+                                  (fromJust (M.lookup ext pbExts)) priv
                                putStrLn url
                otherwise -> putStrLn "Invalid pastebin provider"
 
@@ -47,6 +48,7 @@ data Options = Options
    optClipboard   :: Bool
  , optShowVersion :: Bool
  , optShowHelp    :: Bool
+ , optPrivate     :: Bool
  , optPasteName   :: String
  , optPasteExt    :: String
  , optPastebin    :: String -- Pastebin provider('gist' or 'pb')
@@ -56,6 +58,7 @@ defaultOptions    = Options
  { optClipboard   = False
  , optShowVersion = False
  , optShowHelp    = False
+ , optPrivate     = False
  , optPasteName   = "file"
  , optPasteExt    = "txt"
  , optPastebin    = "gist" 
@@ -78,8 +81,10 @@ options =
         "pastebin with the extension name"
     , Option ['h'] ["help"]
         (NoArg (\opts -> opts { optShowHelp = True })) "help"
-    , Option ['p'] ["pastebin"]
+    , Option ['b'] ["pastebin"]
         (ReqArg (\f opts -> opts { optPastebin = f }) "gist | pb" ) "Select a Pastebin provider"
+    , Option ['p'] ["priv"] 
+        (NoArg (\opts -> opts { optPrivate = True })) "make this paste private"
     ]
 header = "Usage: pb [options]"
 
@@ -93,10 +98,13 @@ parseOpts :: Options -> IO ()
 parseOpts xs
     | optShowVersion xs = putStrLn "pb 0.1"
     | optShowHelp xs    = putStrLn $ usageInfo header options
-    | optClipboard xs   = pastebinCB (optPasteName xs) (optPasteExt xs) (optPastebin xs)
+    | optClipboard xs   = pastebinCB (optPasteName xs) (optPasteExt xs)
+      (optPastebin xs) (optPrivate xs)
     | isInvalidExt xs   = putStrLn "Invalid file extension"
     | isInvalidPb xs    = putStrLn "Invalid pastebin provider"
-    | otherwise         = pastebin (optPasteName xs) (optPasteExt xs) (optPastebin xs)
+    | otherwise         = pastebin (optPasteName xs) (optPasteExt xs)
+      (optPastebin xs) (optPrivate xs)
+    
     -- TODO: Rewrite this in free point style. Should look nicer then.
     where isInvalidExt xs = (not $ isJust $ M.lookup (optPasteExt xs) pbExts) &&
                              optPastebin xs /= "gist"
