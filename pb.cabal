@@ -1,13 +1,19 @@
 Name:          pb
-Version:       0.1
+Version:       0.1.0
+Category:      Network, Application, Console, Utils
 Synopsis:      pastebin command line application
 Description:
   A simple pastebin command line application. Currently supports gist.
 Author:        Dominik Picheta
 Maintainer:    morfeusz8@gmail.com
+Copyright:     (c) 2010 Dominik Picheta
+Stability:     provisional
 Cabal-Version: >= 1.2
-License: BSD3
-build-type: Simple
+License:       BSD3
+License-file:  license
+build-type:    Simple
+extra-source-files: Paste.hs
+
 Executable pb
   Main-is:           pb.hs
   Build-Depends:     base >= 3 && < 5, process >= 1.0.1.3, HTTP >= 4000.0.9

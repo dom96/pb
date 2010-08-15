@@ -102,7 +102,7 @@ pbOpts args =
 
 parseOpts :: Options -> IO ()
 parseOpts xs
-    | optShowVersion xs = putStrLn "pb 0.1"
+    | optShowVersion xs = putStrLn "pb 0.1.0"
     | optShowHelp xs    = putStrLn $ usageInfo header options
     | isInvalidPb xs    = putStrLn "Invalid pastebin provider"
     | optClipboard xs   = pastebinCB (optPasteName xs) (optPasteExt xs)
