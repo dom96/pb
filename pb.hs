@@ -14,6 +14,12 @@ getClipboard = do
         then hGetContents pstdout
         else return ""
 
+safeLookup a
+  | isInvalidExt a = a
+  | otherwise = fromJust $ M.lookup a pbExts
+  where isInvalidExt xs = (not $ isJust $ M.lookup xs pbExts)
+
+
 pastebinCB :: String -> String -> String -> Bool -> IO ()
 pastebinCB name ext pb priv = do
     -- Get the contents of the clipboard
@@ -23,7 +29,7 @@ pastebinCB name ext pb priv = do
                                             ('.':ext) priv
                                         putStrLn url
                         "pb"      -> do url <- newPastebin contents 
-                                          (fromJust (M.lookup ext pbExts)) priv
+                                          (safeLookup ext) priv
                                         putStrLn url
                         -- Leaving this here, just incase.
                         otherwise -> putStrLn "Invalid pastebin provider" 
@@ -39,7 +45,7 @@ pastebin name ext pb priv = do
     case pb of "gist"    -> do url <- newGist contents name ('.':ext) priv
                                putStrLn url
                "pb"      -> do url <- newPastebin contents 
-                                  (fromJust (M.lookup ext pbExts)) priv
+                                  (safeLookup ext) priv
                                putStrLn url
                otherwise -> putStrLn "Invalid pastebin provider"
 
@@ -98,17 +104,14 @@ parseOpts :: Options -> IO ()
 parseOpts xs
     | optShowVersion xs = putStrLn "pb 0.1"
     | optShowHelp xs    = putStrLn $ usageInfo header options
+    | isInvalidPb xs    = putStrLn "Invalid pastebin provider"
     | optClipboard xs   = pastebinCB (optPasteName xs) (optPasteExt xs)
       (optPastebin xs) (optPrivate xs)
-    | isInvalidExt xs   = putStrLn "Invalid file extension"
-    | isInvalidPb xs    = putStrLn "Invalid pastebin provider"
     | otherwise         = pastebin (optPasteName xs) (optPasteExt xs)
       (optPastebin xs) (optPrivate xs)
     
     -- TODO: Rewrite this in free point style. Should look nicer then.
-    where isInvalidExt xs = (not $ isJust $ M.lookup (optPasteExt xs) pbExts) &&
-                             optPastebin xs /= "gist"
-          isInvalidPb xs  = not (optPastebin xs == "gist" || optPastebin xs == "pb")
+    where isInvalidPb xs  = not (optPastebin xs == "gist" || optPastebin xs == "pb")
 
 main = do
     args <- getArgs
