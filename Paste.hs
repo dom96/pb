@@ -51,19 +51,19 @@ getGithubConfig = do
 gistUrl = "https://gist.github.com/gists"
 
 genGistData :: PastebinInfo -> B.ByteString -> B.ByteString -> [(B.ByteString, B.ByteString)]
-genGistData (PastebinInfo contents filename ext priv _ _) usr token
-  | (not $ B.null usr) && (not $ B.null token) =
-    dat ++ [("login", usr), ("token", token)]
-  | (not $ B.null usr) && (not $ B.null token) && priv =
-    -- Gist currently doesn't support private gists through the API.
-    dat ++ [("login", usr), ("token", token)] ++ [("action_button", "private")] 
-  | priv =
-    dat ++ [("action_button", "private")]
-  | otherwise = dat
-  where dotExt = '.':ext
-        dat = [("file_ext[gistfile1]", B.pack ext),
-               ("file_name[gistfile1]", B.pack $ filename ++ dotExt),
-               ("file_contents[gistfile1]", B.pack contents)]
+genGistData pbInfo usr token =
+  let dat = [("file_ext[gistfile1]", B.pack $ pbExt pbInfo),
+             ("file_name[gistfile1]", B.pack $ pbFilename pbInfo ++ ('.':pbExt pbInfo)),
+             ("file_contents[gistfile1]", B.pack $ pbContents pbInfo)]
+  in dat ++ user ++ private
+  where user = 
+          if (not $ B.null usr) && (not $ B.null token)
+            then [("login", usr), ("token", token)]
+            else []
+        private =
+          if pbPriv pbInfo
+            then [("action_button", "private")]
+            else []
 
 newGist :: PastebinInfo -> IO String
 newGist pbInfo = HTTPE.withHttpEnumerator $ do
