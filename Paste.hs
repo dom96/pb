@@ -22,7 +22,7 @@ data PastebinInfo = PastebinInfo
   , pbExt        :: String
   , pbPriv       :: Bool
   , pbExpires    :: Bool
-  , pbExpiryDate :: Maybe String
+  , pbExpireDate :: String
   }
   
 -- Gist
@@ -111,11 +111,19 @@ getSyntax ext
   | otherwise     = ext
   where syntax = M.lookup ext pbExts
 
-genPastebinData :: PastebinInfo -> [(String, String)]
-genPastebinData pbInfo
-  | (pbPriv pbInfo) = dat ++ [("paste_private", "1")]
-  | otherwise = dat
-  where dat = [("paste_code", pbContents pbInfo), ("paste_format", getSyntax $ pbExt pbInfo)]
+genPastebinData pbInfo = 
+  let dat = [("paste_code", pbContents pbInfo), 
+             ("paste_format", getSyntax $ pbExt pbInfo)]
+  in dat ++ private ++ expires
+  where private = 
+          if pbPriv pbInfo 
+            then [("paste_private", "1")] 
+            else []
+        expires = 
+          if pbExpires pbInfo
+            then [("paste_expires", "1"), 
+                  ("paste_expire_date", pbExpireDate pbInfo)]
+            else []
 
 newPastebin :: PastebinInfo -> IO String
 newPastebin pbInfo = do

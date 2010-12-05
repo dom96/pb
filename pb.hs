@@ -20,27 +20,10 @@ safeLookup a
   where isInvalidExt xs = (not $ isJust $ M.lookup xs pbExts)
 
 getStdin :: Options -> IO String
-getStdin (Options _ _ _ _ name ext pbName) = do
+getStdin (Options _ _ _ _ _ name ext pbName _) = do
   putStrLn $ "About to pastebin " ++ name ++ ('.':ext) ++ " to " ++ pbName
   putStrLn "Paste the code you want to pastebin and press CTRL + D to pastebin."
   getContents
-
-{-
-pastebinCB :: String -> String -> String -> Bool -> IO ()
-pastebinCB name ext pb priv = do
-    -- Get the contents of the clipboard
-    contents <- getClipboard
-    if not $ null contents
-        then case pb of "gist"    -> do url <- newGist 
-                                        putStrLn url
-                        "pb"      -> do url <- newPastebin contents 
-                                          (safeLookup ext) priv
-                                        putStrLn url
-                        -- Leaving this here, just incase.
-                        otherwise -> putStrLn "Invalid pastebin provider" 
-                        
-        else putStrLn "Error: Nothing in the clipboard"
-        -}
 
 pastebin :: Options -> IO ()
 pastebin opts = do
@@ -63,8 +46,8 @@ pastebin opts = do
                         else putStrLn "Error: Got nothing from stdin."
         
 newInfo :: Options -> String -> PastebinInfo
-newInfo (Options _ _ _ priv name ext _) contents = 
-  PastebinInfo contents name ext priv False Nothing
+newInfo (Options _ _ _ priv expires name ext _ expireDate) contents = 
+  PastebinInfo contents name ext priv expires expireDate
 
 data Options = Options
  {  
@@ -72,9 +55,11 @@ data Options = Options
  , optShowVersion :: Bool
  , optShowHelp    :: Bool
  , optPrivate     :: Bool
+ , optExpires     :: Bool
  , optPasteName   :: String
  , optPasteExt    :: String
  , optPastebin    :: String -- Pastebin provider('gist' or 'pb')
+ , optExpirationDate :: String
  } deriving Show
 
 defaultOptions    = Options
@@ -82,9 +67,11 @@ defaultOptions    = Options
  , optShowVersion = False
  , optShowHelp    = False
  , optPrivate     = False
+ , optExpires     = False
  , optPasteName   = "file"
  , optPasteExt    = "txt"
- , optPastebin    = "gist" 
+ , optPastebin    = "gist"
+ , optExpirationDate = "1H"
  }
 
 options :: [OptDescr (Options -> Options)] 
@@ -97,16 +84,22 @@ options =
         (ReqArg (\f opts -> opts { optPasteName = f })
             "paste name")
         "pastebin with the specified name"
-    , Option ['e'] ["ext"] 
+    , Option ['x'] ["ext"] 
         (ReqArg (\f opts -> opts { optPasteExt = f })
             "paste extension")
         "pastebin with the extension name"
     , Option ['h'] ["help"]
         (NoArg (\opts -> opts { optShowHelp = True })) "help"
     , Option ['b'] ["pastebin"]
-        (ReqArg (\f opts -> opts { optPastebin = f }) "gist | pb" ) "Select a Pastebin provider"
+        (ReqArg (\f opts -> opts { optPastebin = f }) "gist | pb" ) "Select a Pastebin provider."
     , Option ['p'] ["priv"] 
-        (NoArg (\opts -> opts { optPrivate = True })) "make this paste private"
+        (NoArg (\opts -> opts { optPrivate = True })) "Make this paste private."
+    , Option ['e'] ["expire"] 
+        (NoArg (\opts -> opts { optExpires = True })) "Make this paste expire, default is 1 Hour."
+    , Option ['d'] ["expire-date"]
+        (ReqArg (\f opts -> opts { optExpirationDate = f }) 
+            "date") 
+        "Specifies the expiration date"
     ]
 header = "Usage: pb [options]"
 
